@@ -157,7 +157,7 @@ final class Adapter implements AdapterInterface
     /**
      * @param array $payload
      */
-    protected function release($payload)
+    protected function release($payload): void
     {
         if ($this->deleteReleased) {
             $this->db->createCommand()->delete(
@@ -176,7 +176,7 @@ final class Adapter implements AdapterInterface
     /**
      * Moves expired messages into waiting list.
      */
-    private function moveExpired()
+    private function moveExpired(): void
     {
         if ($this->reserveTime !== time()) {
             $this->reserveTime = time();
