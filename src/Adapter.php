@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Yiisoft\Queue\Db;
 
 use InvalidArgumentException;
+use Yiisoft\Queue\Adapter\AdapterInterface;
 use Yiisoft\Queue\Enum\JobStatus;
 use Yiisoft\Queue\Message\MessageInterface;
 use Yiisoft\Queue\QueueFactory;
