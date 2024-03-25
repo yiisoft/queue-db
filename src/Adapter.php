@@ -110,10 +110,10 @@ final class Adapter implements AdapterInterface
     /**
      * Takes one message from waiting list and reserves it for handling.
      *
-     * @return array|false payload
+     * @return array|null payload
      * @throws \Exception in case it hasn't waited the lock
      */
-    protected function reserve()
+    protected function reserve(): array|null
     {
         // TWK TODO ??? return $this->db->useMaster(function () {
         // TWK TODO ??? if (!$this->mutex->acquire(__CLASS__ . $this->channel, $this->mutexTimeout)) {
