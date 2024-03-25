@@ -85,7 +85,7 @@ final class Adapter implements AdapterInterface
             'priority' => $metadata['priority'] ?? 1024,
         ])->execute();
         $tableSchema = $this->db->getTableSchema($this->tableName);
-        $key = $this->db->getLastInsertID($tableSchema->getSequenceName());
+        $key = $tableSchema ? $this->db->getLastInsertID($tableSchema->getSequenceName()) : $tableSchema;
         
         return new IdEnvelope($message, $key);
     }
@@ -192,6 +192,6 @@ final class Adapter implements AdapterInterface
     /**
      * @var int reserve time
      */
-    private $reserveTime;
+    private $reserveTime = 0;
     
 }
