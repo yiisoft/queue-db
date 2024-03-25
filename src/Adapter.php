@@ -16,10 +16,6 @@ use Yiisoft\Db\Query\Query;
 final class Adapter implements AdapterInterface
 {
     /**
-     * @var Mutex|array|string
-     */
-    public $mutex = 'mutex';
-    /**
      * @var int timeout
      */
     public $mutexTimeout = 3;
@@ -193,6 +189,9 @@ final class Adapter implements AdapterInterface
         }
     }
     
+    /**
+     * @var int reserve time
+     */
     private $reserveTime;
     
 }
