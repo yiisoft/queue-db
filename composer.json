@@ -1,19 +1,23 @@
 {
-    "name": "yiisoft/_____",
+    "name": "yiisoft/queue-db",
     "type": "library",
-    "description": "_____",
+    "description": "Yii Queue DB adapter using yiisoft/db",
     "keywords": [
-        "_____"
+        "yii",
+        "queue",
+        "sql",
+        "database",
+        "async"
     ],
     "homepage": "https://www.yiiframework.com/",
     "license": "BSD-3-Clause",
     "support": {
-        "issues": "https://github.com/yiisoft/_____/issues?state=open",
+        "issues": "https://github.com/yiisoft/queue-db/issues?state=open",
         "forum": "https://www.yiiframework.com/forum/",
         "wiki": "https://www.yiiframework.com/wiki/",
         "irc": "ircs://irc.libera.chat:6697/yii",
         "chat": "https://t.me/yii3en",
-        "source": "https://github.com/yiisoft/_____"
+        "source": "https://github.com/yiisoft/queue-db"
     },
     "funding": [
         {
@@ -28,7 +32,9 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {
-        "php": "^8.1"
+        "php": "^8.1",
+        "yiisoft/db": "^1.0",
+        "yiisoft/queue": "dev-master"
     },
     "require-dev": {
         "maglnet/composer-require-checker": "^4.7",
@@ -40,12 +46,23 @@
     },
     "autoload": {
         "psr-4": {
-            "Yiisoft\\_____\\": "src"
+            "Yiisoft\\Queue\\Db\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Yiisoft\\_____\\Tests\\": "tests"
+            "Yiisoft\\Queue\\Db\\Tests\\": "tests"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "3.0.x-dev"
+        },
+        "config-plugin-options": {
+            "source-directory": "config"
+        },
+        "config-plugin": {
+            "di": "di.php"
         }
     },
     "config": {
