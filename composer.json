@@ -34,6 +34,8 @@
     "require": {
         "php": "^8.1",
         "yiisoft/db": "^1.0",
+        "yiisoft/db-migration": "^1.0",
+        "yiisoft/mutex-file": "^1.0",
         "yiisoft/queue": "dev-master"
     },
     "require-dev": {
