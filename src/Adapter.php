@@ -12,11 +12,16 @@ use Yiisoft\Queue\QueueFactory;
 use Yiisoft\Queue\Message\IdEnvelope;
 use Yiisoft\Db\Connection\ConnectionInterface;
 use Yiisoft\Db\Query\Query;
+use Yiisoft\Mutex\File\FileMutex;
 
 final class Adapter implements AdapterInterface
 {
     /**
-     * @var int timeout
+     * @var FileMutex file mutex
+     */
+    public FileMutex $mutex;
+    /**
+     * @var int mutex timeout
      */
     public $mutexTimeout = 3;
     /**
@@ -33,16 +38,12 @@ final class Adapter implements AdapterInterface
         private ConnectionInterface $db,
         private string $channel = QueueFactory::DEFAULT_CHANNEL_NAME,
     ) {
+        $this->mutex = new FileMutex(__CLASS__ . $this->channel, sys_get_temp_dir());
     }
 
     public function runExisting(callable $handlerCallback): void
     {        
-        $result = true;
-        while (($payload = $this->reserve()) && ($result === true)) {
-            if ($result = $handlerCallback(\unserialize($payload['job']))) {
-                $this->release($payload);
-            }
-        }
+        $this->run($handlerCallback, false);
     }
 
     public function status(string|int $id): JobStatus
@@ -92,7 +93,7 @@ final class Adapter implements AdapterInterface
 
     public function subscribe(callable $handlerCallback): void
     {
-        $this->runExisting($handlerCallback);
+        $this->run($handlerCallback, true, 5); // TWK TODO timeout should not be hard coded
     }
 
     public function withChannel(string $channel): self
@@ -103,7 +104,8 @@ final class Adapter implements AdapterInterface
 
         $new = clone $this;
         $new->channel = $channel;
-
+        $new->mutex = new FileMutex(__CLASS__ . $this->channel, sys_get_temp_dir());
+        
         return $new;
     }
     
@@ -115,10 +117,10 @@ final class Adapter implements AdapterInterface
      */
     protected function reserve(): array|null
     {
-        // TWK TODO ??? return $this->db->useMaster(function () {
-        // TWK TODO ??? if (!$this->mutex->acquire(__CLASS__ . $this->channel, $this->mutexTimeout)) {
-        // TWK TODO ??? throw new \Exception('Has not waited the lock.');
-        // TWK TODO ??? }
+        // TWK TODO what is useMaster in Yii3 return $this->db->useMaster(function () {
+            if (!$this->mutex->acquire($this->mutexTimeout)) {
+                throw new \Exception('Has not waited the lock.');
+            }
             
             try {
                 $this->moveExpired();
@@ -147,7 +149,7 @@ final class Adapter implements AdapterInterface
                     }
                 }
             } finally {
-                // TWK TODO ??? $this->mutex->release(__CLASS__ . $this->channel);
+                $this->mutex->release();
             }
             
             return $payload;
@@ -194,4 +196,25 @@ final class Adapter implements AdapterInterface
      */
     private $reserveTime = 0;
     
+    /**
+     * Listens queue and runs each job.
+     *
+     * @param callable(MessageInterface): bool  $handlerCallback The handler which will handle messages. Returns false if it cannot continue handling messages
+     * @param bool $repeat whether to continue listening when queue is empty.
+     * @param int $timeout number of seconds to sleep before next iteration.
+     */
+    public function run(callable $handlerCallback, bool $repeat, int $timeout = 0): void
+    { 
+        while (1) {  // TWK TODO while condition should not be hard coded, use LoopInterface
+            if ($payload = $this->reserve()) {
+                if ($handlerCallback(\unserialize($payload['job']))) {
+                    $this->release($payload);
+                }
+            } elseif (!$repeat) {
+                break;
+            } elseif ($timeout) {
+                sleep($timeout);
+            }
+        }
+    }
 }
