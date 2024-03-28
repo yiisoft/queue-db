@@ -201,9 +201,9 @@ final class Adapter implements AdapterInterface
      *
      * @param callable(MessageInterface): bool  $handlerCallback The handler which will handle messages. Returns false if it cannot continue handling messages
      * @param bool $repeat whether to continue listening when queue is empty.
-     * @param int $timeout number of seconds to sleep before next iteration.
+     * @param non-negative-int $timeout number of seconds to sleep before next iteration.
      */
-    public function run(callable $handlerCallback, bool $repeat, int<0, max> $timeout = 0): void
+    public function run(callable $handlerCallback, bool $repeat, int $timeout = 0): void
     { 
         while (1) {  // TWK TODO while condition should not be hard coded, use LoopInterface
             if ($payload = $this->reserve()) {
