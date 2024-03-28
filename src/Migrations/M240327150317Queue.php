@@ -10,6 +10,9 @@ use Yiisoft\Db\Migration\TransactionalMigrationInterface;
 
 final class M240327150317Queue implements RevertibleMigrationInterface, TransactionalMigrationInterface
 {
+    /**
+     * @var string table name
+     */
     public $tableName = '{{%queue}}';
 
     /*
