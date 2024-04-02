@@ -38,7 +38,7 @@
         "yiisoft/queue": "dev-master"
     },
     "suggest": {
-        "yiisoft/db-migration": "^1.0": "Enabling db-migration allows database migration of the used queue"
+        "yiisoft/db-migration": "^1.0"
     }
     "require-dev": {
         "maglnet/composer-require-checker": "^4.7",
