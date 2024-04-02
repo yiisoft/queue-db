@@ -13,14 +13,15 @@ use Yiisoft\Queue\QueueFactory;
 use Yiisoft\Queue\Message\IdEnvelope;
 use Yiisoft\Db\Connection\ConnectionInterface;
 use Yiisoft\Db\Query\Query;
-use Yiisoft\Mutex\File\FileMutex;
+use Yiisoft\Mutex\MutexFactoryInterface;
+use Yiisoft\Mutex\MutexInterface;
 
 final class Adapter implements AdapterInterface
 {
     /**
-     * @var FileMutex file mutex
+     * @var MutexInterface mutex interface
      */
-    public FileMutex $mutex;
+    public MutexInterface $mutex;
     /**
      * @var int mutex timeout
      */
@@ -38,9 +39,10 @@ final class Adapter implements AdapterInterface
     public function __construct(
         private ConnectionInterface $db,
         private LoopInterface $loop,
+        private MutexFactoryInterface $mutexFactory,
         private string $channel = QueueFactory::DEFAULT_CHANNEL_NAME,
     ) {
-        $this->mutex = new FileMutex(__CLASS__ . $this->channel, sys_get_temp_dir());
+        $this->mutex = $this->mutexFactory->create(__CLASS__ . $this->channel, sys_get_temp_dir());
     }
 
     public function runExisting(callable $handlerCallback): void
@@ -106,7 +108,7 @@ final class Adapter implements AdapterInterface
 
         $new = clone $this;
         $new->channel = $channel;
-        $new->mutex = new FileMutex(__CLASS__ . $this->channel, sys_get_temp_dir());
+        $new->mutex = $this->mutexFactory->create(__CLASS__ . $this->channel, sys_get_temp_dir());
         
         return $new;
     }
