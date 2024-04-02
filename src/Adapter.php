@@ -214,9 +214,12 @@ final class Adapter implements AdapterInterface
                 if ($handlerCallback(\unserialize($payload['job']))) {
                     $this->release($payload);
                 }
-            } elseif (!$repeat) {
+                continue;
+            } 
+            if (!$repeat) {
                 break;
-            } elseif ($timeout) {
+            } 
+            if ($timeout > 0) {
                 sleep($timeout);
             }
         }
