@@ -39,7 +39,7 @@
     },
     "suggest": {
         "yiisoft/db-migration": "^1.0"
-    }
+    },
     "require-dev": {
         "maglnet/composer-require-checker": "^4.7",
         "phpunit/phpunit": "^10.5",
