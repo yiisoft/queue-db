@@ -34,10 +34,12 @@
     "require": {
         "php": "^8.1",
         "yiisoft/db": "^1.0",
-        "yiisoft/db-migration": "^1.0",
-        "yiisoft/mutex-file": "^1.0",
+        "yiisoft/mutex": "^1.0",
         "yiisoft/queue": "dev-master"
     },
+    "suggest": {
+        "yiisoft/db-migration": "^1.0": "Enabling db-migration allows database migration of the used queue"
+    }
     "require-dev": {
         "maglnet/composer-require-checker": "^4.7",
         "phpunit/phpunit": "^10.5",
