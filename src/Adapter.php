@@ -6,6 +6,7 @@ namespace Yiisoft\Queue\Db;
 
 use InvalidArgumentException;
 use Yiisoft\Queue\Adapter\AdapterInterface;
+use Yiisoft\Queue\Cli\LoopInterface;
 use Yiisoft\Queue\Enum\JobStatus;
 use Yiisoft\Queue\Message\MessageInterface;
 use Yiisoft\Queue\QueueFactory;
@@ -36,6 +37,7 @@ final class Adapter implements AdapterInterface
     
     public function __construct(
         private ConnectionInterface $db,
+        private LoopInterface $loop,
         private string $channel = QueueFactory::DEFAULT_CHANNEL_NAME,
     ) {
         $this->mutex = new FileMutex(__CLASS__ . $this->channel, sys_get_temp_dir());
@@ -205,7 +207,7 @@ final class Adapter implements AdapterInterface
      */
     public function run(callable $handlerCallback, bool $repeat, int $timeout = 0): void
     { 
-        while (1) {  // TWK TODO while condition should not be hard coded, use LoopInterface
+        while ($this->loop->canContinue()) {
             if ($payload = $this->reserve()) {
                 if ($handlerCallback(\unserialize($payload['job']))) {
                     $this->release($payload);
