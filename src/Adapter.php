@@ -9,6 +9,7 @@ use Yiisoft\Queue\Adapter\AdapterInterface;
 use Yiisoft\Queue\Cli\LoopInterface;
 use Yiisoft\Queue\Enum\JobStatus;
 use Yiisoft\Queue\Message\MessageInterface;
+use Yiisoft\Queue\Message\MessageSerializerInterface;
 use Yiisoft\Queue\QueueFactory;
 use Yiisoft\Queue\Message\IdEnvelope;
 use Yiisoft\Db\Connection\ConnectionInterface;
@@ -23,21 +24,22 @@ final class Adapter implements AdapterInterface
      */
     public MutexInterface $mutex;
     /**
-     * @var int mutex timeout
+     * @var int Mutex timeout.
      */
     public $mutexTimeout = 3;
     /**
-     * @var string table name
+     * @var string Table name.
      */
     public $tableName = '{{%queue}}';
     /**
-     * @var bool ability to delete released messages from table
+     * @var bool Ability to delete released messages from table.
      */
     public $deleteReleased = true;
     
     
     public function __construct(
         private ConnectionInterface $db,
+        private MessageSerializerInterface $serializer,
         private LoopInterface $loop,
         private MutexFactoryInterface $mutexFactory,
         private string $channel = QueueFactory::DEFAULT_CHANNEL_NAME,
@@ -83,7 +85,7 @@ final class Adapter implements AdapterInterface
         $metadata = $message->getMetadata();
         $this->db->createCommand()->insert($this->tableName, [
             'channel' => $this->channel,
-            'job' => \serialize($message),
+            'job' => $this->serializer->serialize($message),
             'pushed_at' => time(),
             'ttr' => $metadata['ttr'] ?? 300,
             'delay' => $metadata['delay'] ?? 0,
@@ -211,7 +213,7 @@ final class Adapter implements AdapterInterface
     { 
         while ($this->loop->canContinue()) {
             if ($payload = $this->reserve()) {
-                if ($handlerCallback(\unserialize($payload['job']))) {
+                if ($handlerCallback($this->serializer->unserialize($payload['job']))) {
                     $this->release($payload);
                 }
                 continue;
