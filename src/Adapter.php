@@ -19,7 +19,7 @@ use Yiisoft\Mutex\MutexInterface;
 final class Adapter implements AdapterInterface
 {
     /**
-     * @var MutexInterface mutex interface
+     * @var MutexInterface Mutex interface.
      */
     public MutexInterface $mutex;
     /**
