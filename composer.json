@@ -48,7 +48,7 @@
     "suggest": {
         "yiisoft/db-sqlite": "For using with SQLite",
         "yiisoft/db-mysql": "For using with MySQL",
-        "yiisoft/db-pgsql": "For using with PosgtgreSQL",
+        "yiisoft/db-pgsql": "For using with PostgreSQL",
         "yiisoft/db-mssql": "For using with Microsoft SQL Server",
         "yiisoft/db-oracle": "For using with Oracle",
         "yiisoft/db-migration": "For automating schema migration"
