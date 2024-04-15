@@ -12,16 +12,6 @@ final class M240409200600CreateQueueTable implements RevertibleMigrationInterfac
 
     public function up(MigrationBuilder $b): void
     {
-        $this->createAssignmentsTable($b);
-    }
-
-    public function down(MigrationBuilder $b): void
-    {
-        $b->dropTable(self::QUEUE_TABLE);
-    }
-
-    private function createAssignmentsTable(MigrationBuilder $b): void
-    {
         $b->createTable(
             self::QUEUE_TABLE,
             [
@@ -41,5 +31,10 @@ final class M240409200600CreateQueueTable implements RevertibleMigrationInterfac
                 'KEY priority ([[priority]])',
             ],
         );
+    }
+
+    public function down(MigrationBuilder $b): void
+    {
+        $b->dropTable(self::QUEUE_TABLE);
     }
 }
