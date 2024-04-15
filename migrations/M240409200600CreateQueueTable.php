@@ -8,8 +8,7 @@ use Yiisoft\Db\Migration\TransactionalMigrationInterface;
 
 final class M240409200600CreateQueueTable implements RevertibleMigrationInterface, TransactionalMigrationInterface
 {
-    private const TABLE_PREFIX = ''; // Add table prefix if required
-    private const QUEUE_TABLE = self::TABLE_PREFIX . 'queue';
+    private const QUEUE_TABLE = 'queue';
 
     public function up(MigrationBuilder $b): void
     {
