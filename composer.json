@@ -45,6 +45,10 @@
         "spatie/phpunit-watcher": "^1.23",
         "vimeo/psalm": "^5.20"
     },
+    "suggest": {
+        "yiisoft/db": "For using with Yii Database",
+        "yiisoft/db-migration": "For automating schema migration"
+    },
     "autoload": {
         "psr-4": {
             "Yiisoft\\Queue\\Db\\": "src"
