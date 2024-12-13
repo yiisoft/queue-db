@@ -43,7 +43,7 @@ final class Adapter implements AdapterInterface
         private MutexFactoryInterface $mutexFactory,
         private string $channel = QueueFactory::DEFAULT_CHANNEL_NAME,
     ) {
-        $this->mutex = $this->mutexFactory->create(__CLASS__ . $this->channel);
+        $this->mutex = $this->mutexFactory->create(self::class . $this->channel);
     }
 
     public function runExisting(callable $handlerCallback): void
@@ -109,7 +109,7 @@ final class Adapter implements AdapterInterface
 
         $new = clone $this;
         $new->channel = $channel;
-        $new->mutex = $this->mutexFactory->create(__CLASS__ . $this->channel);
+        $new->mutex = $this->mutexFactory->create(self::class . $this->channel);
 
         return $new;
     }
