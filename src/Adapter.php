@@ -4,18 +4,21 @@ declare(strict_types=1);
 
 namespace Yiisoft\Queue\Db;
 
+use BackedEnum;
 use InvalidArgumentException;
+use RuntimeException;
 use Yiisoft\Queue\Adapter\AdapterInterface;
 use Yiisoft\Queue\Cli\LoopInterface;
-use Yiisoft\Queue\Enum\JobStatus;
+use Yiisoft\Queue\Message\DelayEnvelope;
 use Yiisoft\Queue\Message\MessageInterface;
-use Yiisoft\Queue\Message\MessageSerializerInterface;
-use Yiisoft\Queue\QueueFactory;
+use Yiisoft\Queue\Message\Serializer\MessageSerializerInterface;
+use Yiisoft\Queue\MessageStatus;
 use Yiisoft\Queue\Message\IdEnvelope;
 use Yiisoft\Db\Connection\ConnectionInterface;
 use Yiisoft\Db\Query\Query;
 use Yiisoft\Mutex\MutexFactoryInterface;
 use Yiisoft\Mutex\MutexInterface;
+use Yiisoft\Queue\Provider\QueueProviderInterface;
 
 final class Adapter implements AdapterInterface
 {
@@ -41,7 +44,7 @@ final class Adapter implements AdapterInterface
         private MessageSerializerInterface $serializer,
         private LoopInterface $loop,
         private MutexFactoryInterface $mutexFactory,
-        private string $channel = QueueFactory::DEFAULT_CHANNEL_NAME,
+        private string $channel = QueueProviderInterface::DEFAULT_QUEUE,
     ) {
         $this->mutex = $this->mutexFactory->create(self::class . $this->channel);
     }
@@ -51,7 +54,7 @@ final class Adapter implements AdapterInterface
         $this->run($handlerCallback, false);
     }
 
-    public function status(string|int $id): JobStatus
+    public function status(string|int $id): MessageStatus
     {
         $id = (int) $id;
 
@@ -60,35 +63,39 @@ final class Adapter implements AdapterInterface
         ->where(['id' => $id])
         ->one();
 
-        if (!$payload) {
+        if ($payload === null) {
             if ($this->deleteReleased) {
-                return JobStatus::done();
+                return MessageStatus::DONE;
             }
 
             throw new InvalidArgumentException("Unknown message ID: $id.");
         }
 
+        if (!is_array($payload)) {
+            throw new RuntimeException('Queue payload must be an array.');
+        }
+
         if (!$payload['reserved_at']) {
-            return JobStatus::waiting();
+            return MessageStatus::WAITING;
         }
 
         if (!$payload['done_at']) {
-            return JobStatus::reserved();
+            return MessageStatus::RESERVED;
         }
 
-        return JobStatus::done();
+        return MessageStatus::DONE;
     }
 
     public function push(MessageInterface $message): MessageInterface
     {
-        $metadata = $message->getMetadata();
+        $meta = $message->getMeta();
         $this->db->createCommand()->insert($this->tableName, [
             'channel' => $this->channel,
             'job' => $this->serializer->serialize($message),
             'pushed_at' => time(),
-            'ttr' => $metadata['ttr'] ?? 300,
-            'delay' => $metadata['delay'] ?? 0,
-            'priority' => $metadata['priority'] ?? 1024,
+            'ttr' => $meta['ttr'] ?? 300,
+            'delay' => $meta[DelayEnvelope::META_DELAY_SECONDS] ?? 0,
+            'priority' => $meta['priority'] ?? 1024,
         ])->execute();
         $tableSchema = $this->db->getTableSchema($this->tableName);
         $key = $tableSchema ? $this->db->getLastInsertID($tableSchema->getSequenceName()) : $tableSchema;
@@ -101,15 +108,17 @@ final class Adapter implements AdapterInterface
         $this->run($handlerCallback, true, 5); // TWK TODO timeout should not be hard coded
     }
 
-    public function withChannel(string $channel): self
+    public function withChannel(BackedEnum|string $channel): self
     {
+        $channel = is_string($channel) ? $channel : (string) $channel->value;
+
         if ($channel === $this->channel) {
             return $this;
         }
 
         $new = clone $this;
         $new->channel = $channel;
-        $new->mutex = $this->mutexFactory->create(self::class . $this->channel);
+        $new->mutex = $this->mutexFactory->create(self::class . $new->channel);
 
         return $new;
     }
@@ -138,7 +147,11 @@ final class Adapter implements AdapterInterface
             ->orderBy(['priority' => SORT_ASC, 'id' => SORT_ASC])
             ->limit(1)
             ->one();
-            if (is_array($payload)) {
+            if ($payload !== null && !is_array($payload)) {
+                throw new RuntimeException('Queue payload must be an array.');
+            }
+
+            if ($payload !== null) {
                 $payload['reserved_at'] = time();
                 $payload['attempt'] = (int) $payload['attempt'] + 1;
                 $this->db->createCommand()->update($this->tableName, [
@@ -191,6 +204,7 @@ final class Adapter implements AdapterInterface
                 $this->tableName,
                 ['reserved_at' => null],
                 '[[reserved_at]] < :time - [[ttr]] and [[reserved_at]] is not null and [[done_at]] is null',
+                null,
                 [':time' => $this->reserveTime]
             )->execute();
         }
