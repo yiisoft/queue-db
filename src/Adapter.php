@@ -19,6 +19,13 @@ use Yiisoft\Db\Query\Query;
 use Yiisoft\Mutex\MutexFactoryInterface;
 use Yiisoft\Mutex\MutexInterface;
 use Yiisoft\Queue\Provider\QueueProviderInterface;
+use Exception;
+
+use function is_array;
+use function is_resource;
+use function is_string;
+
+use const SORT_ASC;
 
 final class Adapter implements AdapterInterface
 {
@@ -38,6 +45,11 @@ final class Adapter implements AdapterInterface
      * @var bool Ability to delete released messages from table.
      */
     public $deleteReleased = true;
+
+    /**
+     * @var int reserve time
+     */
+    private $reserveTime = 0;
 
     public function __construct(
         private ConnectionInterface $db,
@@ -124,16 +136,41 @@ final class Adapter implements AdapterInterface
     }
 
     /**
+     * Listens queue and runs each job.
+     *
+     * @param callable(MessageInterface): bool  $handlerCallback The handler which will handle messages. Returns false if it cannot continue handling messages
+     * @param bool $repeat whether to continue listening when queue is empty.
+     * @param non-negative-int $timeout number of seconds to sleep before next iteration.
+     */
+    public function run(callable $handlerCallback, bool $repeat, int $timeout = 0): void
+    {
+        while ($this->loop->canContinue()) {
+            if ($payload = $this->reserve()) {
+                if ($handlerCallback($this->serializer->unserialize($payload['job']))) {
+                    $this->release($payload);
+                }
+                continue;
+            }
+            if (!$repeat) {
+                break;
+            }
+            if ($timeout > 0) {
+                sleep($timeout);
+            }
+        }
+    }
+
+    /**
      * Takes one message from waiting list and reserves it for handling.
      *
-     * @throws \Exception in case it hasn't waited the lock
+     * @throws Exception in case it hasn't waited the lock
      * @return array|null payload
      */
-    protected function reserve(): array|null
+    protected function reserve(): ?array
     {
         // TWK TODO what is useMaster in Yii3 return $this->db->useMaster(function () {
         if (!$this->mutex->acquire($this->mutexTimeout)) {
-            throw new \Exception('Has not waited the lock.');
+            throw new Exception('Has not waited the lock.');
         }
 
         try {
@@ -182,13 +219,13 @@ final class Adapter implements AdapterInterface
         if ($this->deleteReleased) {
             $this->db->createCommand()->delete(
                 $this->tableName,
-                ['id' => $payload['id']]
+                ['id' => $payload['id']],
             )->execute();
         } else {
             $this->db->createCommand()->update(
                 $this->tableName,
                 ['done_at' => time()],
-                ['id' => $payload['id']]
+                ['id' => $payload['id']],
             )->execute();
         }
     }
@@ -205,38 +242,8 @@ final class Adapter implements AdapterInterface
                 ['reserved_at' => null],
                 '[[reserved_at]] < :time - [[ttr]] and [[reserved_at]] is not null and [[done_at]] is null',
                 null,
-                [':time' => $this->reserveTime]
+                [':time' => $this->reserveTime],
             )->execute();
-        }
-    }
-
-    /**
-     * @var int reserve time
-     */
-    private $reserveTime = 0;
-
-    /**
-     * Listens queue and runs each job.
-     *
-     * @param callable(MessageInterface): bool  $handlerCallback The handler which will handle messages. Returns false if it cannot continue handling messages
-     * @param bool $repeat whether to continue listening when queue is empty.
-     * @param non-negative-int $timeout number of seconds to sleep before next iteration.
-     */
-    public function run(callable $handlerCallback, bool $repeat, int $timeout = 0): void
-    {
-        while ($this->loop->canContinue()) {
-            if ($payload = $this->reserve()) {
-                if ($handlerCallback($this->serializer->unserialize($payload['job']))) {
-                    $this->release($payload);
-                }
-                continue;
-            }
-            if (!$repeat) {
-                break;
-            }
-            if ($timeout > 0) {
-                sleep($timeout);
-            }
         }
     }
 }

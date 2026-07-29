@@ -18,6 +18,8 @@ use Yiisoft\Queue\Message\IdEnvelope;
 use Yiisoft\Queue\Message\Serializer\MessageSerializerInterface;
 use Yiisoft\Queue\Provider\QueueProviderInterface;
 
+use function in_array;
+
 final class AdapterTest extends TestCase
 {
     public function testPushUsesMessageMetaAndReturnsIdEnvelope(): void
