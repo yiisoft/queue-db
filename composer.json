@@ -39,10 +39,10 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.95",
-        "maglnet/composer-require-checker": "^4.7",
         "phpunit/phpunit": "^10.5",
         "rector/rector": "^2.0.3",
         "roave/infection-static-analysis-plugin": "^1.34",
+        "shipmonk/composer-dependency-analyser": "^1.8",
         "spatie/phpunit-watcher": "^1.23",
         "vimeo/psalm": "^5.26.1 || ^6.16.1",
         "yiisoft/cache": "^3.2",
@@ -82,6 +82,7 @@
         "test": "phpunit --testdox",
         "test-watch": "phpunit-watcher watch",
         "rector": "rector",
-        "cs-fix": "php-cs-fixer fix"
+        "cs-fix": "php-cs-fixer fix",
+        "dependency-analyser": "composer-dependency-analyser"
     }
 }
