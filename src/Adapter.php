@@ -18,7 +18,7 @@ use Yiisoft\Db\Connection\ConnectionInterface;
 use Yiisoft\Db\Query\Query;
 use Yiisoft\Mutex\MutexFactoryInterface;
 use Yiisoft\Mutex\MutexInterface;
-use Yiisoft\Queue\Provider\QueueProviderInterface;
+use Yiisoft\Queue\DefaultQueue;
 use Exception;
 
 use function is_array;
@@ -56,7 +56,7 @@ final class Adapter implements AdapterInterface
         private MessageSerializerInterface $serializer,
         private LoopInterface $loop,
         private MutexFactoryInterface $mutexFactory,
-        private string $channel = QueueProviderInterface::DEFAULT_QUEUE,
+        private string $channel = DefaultQueue::NAME,
     ) {
         $this->mutex = $this->mutexFactory->create(self::class . $this->channel);
     }
