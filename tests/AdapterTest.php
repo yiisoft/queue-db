@@ -16,7 +16,7 @@ use Yiisoft\Queue\Message\DelayEnvelope;
 use Yiisoft\Queue\Message\GenericMessage;
 use Yiisoft\Queue\Message\IdEnvelope;
 use Yiisoft\Queue\Message\Serializer\MessageSerializerInterface;
-use Yiisoft\Queue\Provider\QueueProviderInterface;
+use Yiisoft\Queue\DefaultQueue;
 
 use function in_array;
 
@@ -49,7 +49,7 @@ final class AdapterTest extends TestCase
             ->expects(self::once())
             ->method('insert')
             ->with('{{%queue}}', self::callback(static function (array $row): bool {
-                return $row['channel'] === QueueProviderInterface::DEFAULT_QUEUE
+                return $row['channel'] === DefaultQueue::NAME
                     && $row['job'] === 'serialized-message'
                     && $row['ttr'] === 10
                     && $row['delay'] === 5.0
@@ -93,7 +93,7 @@ final class AdapterTest extends TestCase
             ->method('create')
             ->with(self::callback(static function (string $name) use (&$mutexNames): bool {
                 $mutexNames[] = $name;
-                return in_array($name, [Adapter::class . QueueProviderInterface::DEFAULT_QUEUE, Adapter::class . 'mail'], true);
+                return in_array($name, [Adapter::class . DefaultQueue::NAME, Adapter::class . 'mail'], true);
             }))
             ->willReturn($this->createMock(MutexInterface::class));
 
@@ -104,7 +104,7 @@ final class AdapterTest extends TestCase
         $new = $adapter->withChannel('mail');
 
         self::assertNotSame($adapter, $new);
-        self::assertSame([Adapter::class . QueueProviderInterface::DEFAULT_QUEUE, Adapter::class . 'mail'], $mutexNames);
+        self::assertSame([Adapter::class . DefaultQueue::NAME, Adapter::class . 'mail'], $mutexNames);
     }
 
     private function createAdapter(
