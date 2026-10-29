@@ -138,7 +138,8 @@ final class Adapter implements AdapterInterface
     /**
      * Listens queue and runs each job.
      *
-     * @param callable(MessageInterface): bool  $handlerCallback The handler which will handle messages. Returns false if it cannot continue handling messages
+     * @param callable(MessageInterface): bool  $handlerCallback The handler which will handle messages. Returns false if
+     * it did not process the message and cannot continue handling messages. Such a message is returned to the queue.
      * @param bool $repeat whether to continue listening when queue is empty.
      * @param non-negative-int $timeout number of seconds to sleep before next iteration.
      */
@@ -146,9 +147,11 @@ final class Adapter implements AdapterInterface
     {
         while ($this->loop->canContinue()) {
             if ($payload = $this->reserve()) {
-                if ($handlerCallback($this->serializer->unserialize($payload['job']))) {
-                    $this->release($payload);
+                if (!$handlerCallback($this->serializer->unserialize($payload['job']))) {
+                    $this->cancelReservation($payload);
+                    break;
                 }
+                $this->release($payload);
                 continue;
             }
             if (!$repeat) {
@@ -228,6 +231,30 @@ final class Adapter implements AdapterInterface
                 ['id' => $payload['id']],
             )->execute();
         }
+    }
+
+    /**
+     * Returns a message the handler did not process back to the waiting list as it was before {@see reserve()}.
+     *
+     * The update is skipped if the reservation expired and the message was reserved again in the meantime.
+     *
+     * @param array $payload
+     */
+    private function cancelReservation(array $payload): void
+    {
+        $attempt = (int) $payload['attempt'] - 1;
+
+        $this->db->createCommand()->update(
+            $this->tableName,
+            [
+                'reserved_at' => null,
+                'attempt' => $attempt > 0 ? $attempt : null,
+            ],
+            [
+                'id' => $payload['id'],
+                'reserved_at' => $payload['reserved_at'],
+            ],
+        )->execute();
     }
 
     /**
